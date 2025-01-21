@@ -1,6 +1,6 @@
 # oc101-lab
 
-## Deployment
+## 03 - Deployment
 
 ### Create an ImageStreamTag
 
@@ -46,3 +46,40 @@ Remove the dry run:
 ```
 
 Verify the MongoDB deployment is up by navigating to `Topology` in the OpenShift console details
+
+### Add environment variables
+
+```
+oc -n [-dev] set env deployment/rocketchat-[username] "MONGO_URL=mongodb://dbuser:dbpass@mongodb-[username]:27017/rocketchat"
+```
+
+Navigate to `Topology` in the OpenShift web console and investigate your RocketChat deployment
+
+### Create a Route for the app
+
+```
+oc -n [-dev] create route edge rocketchat-[username] --service=rocketchat-[username] --insecure-policy=Redirect
+```
+
+### Health Checks
+
+Add a healthcheck for `readiness` and `liveness`:
+
+```
+oc -n [-dev] set probe deployment/rocketchat-[username] --readiness --get-url=http://:3000/ --initial-delay-seconds=15
+```
+A readiness check will be added to the deployment so that you no longer have a false positive of when the pod should be considered available. By default pods are considered to be 'ready' when the container starts up and the entrypoint script is running. This however is not useful for things like webservers or databases! Not only do you need the entrypoint script to run but you need to wait for the server to listen on a port.
+
+## 04 - Exploring deployment options
+
+### Using `oc explain`
+
+Discover the fields that belong to a Deployment
+
+```
+oc explain deployment
+```
+## 05 - Resource requests and limits
+
+###
+
