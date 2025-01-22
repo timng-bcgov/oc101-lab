@@ -81,5 +81,67 @@ oc explain deployment
 ```
 ## 05 - Resource requests and limits
 
-###
+View the resource limit ranges in place:
+
+```
+oc get LimitRange
+oc -n [-dev] describe LimitRange default-limits
+```
+Which returns:
+
+```
+Name:       default-limits
+Namespace:  d8f105-dev
+Type        Resource  Min  Max  Default Request  Default Limit  Max Limit/Request Ratio
+----        --------  ---  ---  ---------------  -------------  -----------------------
+Container   cpu       -    -    50m              -              -
+Container   memory    -    -    256Mi            -              -
+```
+
+## 06 - Application availability
+
+### Scaling pods
+
+To increase the availability of an application and defend against unplanned outages or planned maintenance tasks, an application must have multiple pods/instance running. For this reason, stateless applications are desirable as they do not require custom clustering configurations.
+
+Stateful applications do not support "scaling pods" as a form of high availability. Such a stateful example would be the mongodb database. For this reason, this lab focuses on the rocketchat application which will function with multiple pods. Please refer to specific application documentaion for details on scalability support.
+
+
+## 08 - Persistent storage
+
+Up to this point, we've leveraged a single MongoDB pod with ephemeral storage. In order to maintain the application data, persistent storage is required.
+
+https://kubernetes.io/docs/concepts/storage/volumes/
+
+### RWO Storage
+
+RWO storage is analogous to attaching a physical disk to a pod. For this reason, RWO storage cannot be mounted to more than 1 pod at the same time.
+
+### RWX Storage
+
+```
+# Remove all volumes
+oc -n d8f105-dev get deployment/mongodb-timng -o jsonpath='{.spec.template.spec.volumes[].name}{"\n"}' | xargs -I {} oc -n d8f105-dev set volumes deployment/mongodb-timng --remove '--name={}'
+```
+
+```
+# Attach a new volume
+oc -n d8f105-dev set volume deployment/mongodb-timng --add --name=mongodb-timng-data -m /var/lib/mongodb/data -t pvc --claim-name=mongodb-timng-file
+```
+
+```
+# Use the Recreate deployment strategy
+oc -n d8f105-dev patch deployment/mongodb-timng -p '{"spec":{"strategy":{"activeDeadlineSeconds":21600,"recreateParams":{"timeoutSeconds":600},"resources":{},"type":"Recreate"}}}'
+```
+
+## 09 - Persistent configurations
+
+In cases where configurations need to change frequently or common configurations should be shared across deployments or pods, it is not ideal to build said configurations into the container image or maintain multiple copies of the configuration. OpenShift supports configMaps which can be a standalone object that is easily mounted into pods. In cases where the configuration file or data is sensitive in nature, OpenShift supports secrets to handle this sensitive data.
+
+### Create and add ConfigMap to deployments
+
+
+
+
+
 
